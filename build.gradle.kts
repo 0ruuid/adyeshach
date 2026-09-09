@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     java
-    id("io.izzel.taboolib") version "2.0.37" apply false
+    id("io.izzel.taboolib") version "2.0.38" apply false
     id("org.jetbrains.kotlin.jvm") version "1.9.24" apply false
 }
 
@@ -21,7 +21,7 @@ subprojects {
             install(BukkitNMSDataSerializer)
             // repoTabooLib = project.repositories.mavenLocal().url.toString()
         }
-        version { taboolib = "6.3.0-afd75a7" }
+        version { taboolib = "6.3.0-75b18a2" }
     }
     repositories {
         mavenLocal()
@@ -42,7 +42,7 @@ subprojects {
         compileOnly("org.spongepowered:math:2.0.1")
         // download
         compileOnly("com.github.ben-manes.caffeine:caffeine:2.9.3")
-        compileOnly("com.github.retrooper:packetevents-spigot:2.12.1")
+        compileOnly("com.github.retrooper:packetevents-spigot:2.13.0")
     }
     tasks.withType<JavaCompile> { options.encoding = "UTF-8" }
     tasks.withType<KotlinCompile> {
