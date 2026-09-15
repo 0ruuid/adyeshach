@@ -10,10 +10,11 @@
 
 ## 特征
 
-- 已支持至 1.21.X 版本
+- 支持 Minecraft 1.8-26.2 版本
 - 需要前置插件：
     - [PacketEvents](https://modrinth.com/plugin/packetevents)
-- 支持模型：BetterModel、ModelEngine
+- 支持模型：BetterModel v3、ModelEngine
+    - BetterModel v3 需要 Java 25，支持 Minecraft 1.21.4 及以上版本
 
 ## 构建
 

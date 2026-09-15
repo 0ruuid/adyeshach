@@ -1,10 +1,11 @@
 import io.izzel.taboolib.gradle.*
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
     java
     id("io.izzel.taboolib") version "2.0.38" apply false
-    id("org.jetbrains.kotlin.jvm") version "1.9.24" apply false
+    id("org.jetbrains.kotlin.jvm") version "2.4.20" apply false
 }
 
 subprojects {
@@ -45,10 +46,10 @@ subprojects {
         compileOnly("com.github.retrooper:packetevents-spigot:2.13.0")
     }
     tasks.withType<JavaCompile> { options.encoding = "UTF-8" }
-    tasks.withType<KotlinCompile> {
-        kotlinOptions {
-            jvmTarget = "1.8"
-            freeCompilerArgs = listOf("-Xjvm-default=all", "-Xextended-compiler-checks")
+    tasks.withType<KotlinJvmCompile>().configureEach {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_1_8)
+            freeCompilerArgs.addAll("-Xjvm-default=all", "-Xextended-compiler-checks")
         }
     }
     configure<JavaPluginConvention> {

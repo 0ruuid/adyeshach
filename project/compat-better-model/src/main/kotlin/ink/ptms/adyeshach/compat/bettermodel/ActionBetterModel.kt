@@ -8,6 +8,7 @@ import ink.ptms.adyeshach.impl.getManager
 import ink.ptms.adyeshach.impl.isEntitySelected
 import kr.toxicity.model.api.animation.AnimationIterator
 import kr.toxicity.model.api.animation.AnimationModifier
+import kr.toxicity.model.api.bukkit.platform.BukkitAdapter
 import kr.toxicity.model.api.tracker.DummyTracker
 import org.bukkit.entity.Player
 import taboolib.common.LifeCycle
@@ -56,7 +57,7 @@ internal fun init() {
                                         .speed(speed.toFloat())
                                         .apply {
                                             if (!isAllPlayers && sender != null) {
-                                                player(sender)
+                                                player(BukkitAdapter.adapt(sender))
                                             }
                                         }
                                         .build()
@@ -67,7 +68,7 @@ internal fun init() {
                                         dummyTracker.stopAnimation(animationName)
                                     } else {
                                         if (sender != null) {
-                                            dummyTracker.stopAnimation({ true }, animationName, sender)
+                                            dummyTracker.stopAnimation({ true }, animationName, BukkitAdapter.adapt(sender))
                                         } else {
                                             dummyTracker.stopAnimation(animationName)
                                         }

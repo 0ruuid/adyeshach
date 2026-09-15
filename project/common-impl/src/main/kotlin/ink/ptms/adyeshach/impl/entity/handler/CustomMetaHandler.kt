@@ -2,6 +2,7 @@ package ink.ptms.adyeshach.impl.entity.handler
 
 import ink.ptms.adyeshach.core.AdyeshachSettings
 import ink.ptms.adyeshach.core.bukkit.BukkitPose
+import ink.ptms.adyeshach.core.entity.BetterModelView
 import ink.ptms.adyeshach.core.entity.ModelEngineOptions
 import ink.ptms.adyeshach.core.util.getEnum
 import ink.ptms.adyeshach.impl.entity.DefaultEntityInstance
@@ -79,6 +80,12 @@ open class CustomMetaHandler(protected val self: DefaultEntityInstance) {
             // 加载后自动显示
             "visibleafterloaded", "visible_after_loaded" -> {
                 self.visibleAfterLoaded = value?.cbool ?: true
+                true
+            }
+            // BetterModel
+            "bettermodelname", "bettermodel_name", "bettermodel", "better_model" -> {
+                val betterModel = self as? BetterModelView ?: return false
+                betterModel.betterModelName = value ?: ""
                 true
             }
             // 模型引擎

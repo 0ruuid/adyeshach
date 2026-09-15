@@ -10,6 +10,7 @@ import kr.toxicity.model.api.BetterModel
 import kr.toxicity.model.api.animation.AnimationIterator
 import kr.toxicity.model.api.animation.AnimationModifier
 import kr.toxicity.model.api.bone.BoneTags
+import kr.toxicity.model.api.bukkit.platform.BukkitAdapter
 import kr.toxicity.model.api.tracker.DummyTracker
 import kr.toxicity.model.api.tracker.TrackerModifier
 import org.bukkit.Bukkit
@@ -45,15 +46,16 @@ internal interface DefaultBetterModel : AdyInteraction, BetterModelView {
         tracker?.let {
             setHitbox(it)
             entity.updateEntityMetadata(viewer)
-            it.spawn(viewer)
-            it.show(viewer)
+            val player = BukkitAdapter.adapt(viewer)
+            it.spawn(player)
+            it.show(player)
         }
         return true
     }
 
     override fun hideModel(viewer: Player): Boolean {
         if (!isBetterModelHooked() || betterModelName.isBlank()) return false
-        getDummy()?.hide(viewer)
+        getDummy()?.hide(BukkitAdapter.adapt(viewer))
         return true
     }
 
@@ -65,7 +67,7 @@ internal interface DefaultBetterModel : AdyInteraction, BetterModelView {
     override fun teleportModel(location: Location) {
         if (!isBetterModelHooked() || betterModelName.isBlank()) return
         val tracker = ensureDummy() ?: return
-        tracker.location(location)
+        tracker.location(BukkitAdapter.adapt(location))
     }
 
     override fun refreshModel(): Boolean {
@@ -77,13 +79,14 @@ internal interface DefaultBetterModel : AdyInteraction, BetterModelView {
         val entity = this as EntityInstance
         val existed = getDummy()
         val tracker = ensureDummy() ?: return true
-        tracker.location(entity.getLocation())
+        tracker.location(BukkitAdapter.adapt(entity.getLocation()))
         setHitbox(tracker)
         entity.getVisiblePlayers().forEach { entity.updateEntityMetadata(it) }
         if (existed == null) {
             entity.getVisiblePlayers().forEach {
-                tracker.spawn(it)
-                tracker.show(it)
+                val player = BukkitAdapter.adapt(it)
+                tracker.spawn(player)
+                tracker.show(player)
             }
         }
         return true
@@ -108,7 +111,7 @@ internal interface DefaultBetterModel : AdyInteraction, BetterModelView {
             warning("Cannot find BetterModel: $betterModelName")
             return null
         }
-        val created = renderer.create(entity.getLocation(), TrackerModifier.DEFAULT)
+        val created = renderer.create(BukkitAdapter.adapt(entity.getLocation()), TrackerModifier.DEFAULT)
         setDummy(created)
         return created
     }
