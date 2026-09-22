@@ -1,7 +1,6 @@
 package ink.ptms.adyeshach.core.entity
 
 import org.bukkit.entity.Player
-import taboolib.platform.util.onlinePlayers
 import java.util.function.Consumer
 
 /**
@@ -73,7 +72,7 @@ interface Viewable {
      * 清空观察者
      */
     fun clearViewer() {
-        onlinePlayers.filter { it.name in viewPlayers.viewers }.forEach { removeViewer(it) }
+        viewPlayers.getPlayers().forEach { removeViewer(it) }
     }
 
     /**
