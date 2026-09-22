@@ -2,6 +2,8 @@ package ink.ptms.adyeshach.core.entity.path
 
 import ink.ptms.adyeshach.core.AdyeshachSettings
 import ink.ptms.adyeshach.core.entity.type.errorBy
+import ink.ptms.adyeshach.core.util.FoliaRuntime
+import ink.ptms.adyeshach.core.util.runOnRegion
 import org.bukkit.Location
 import org.bukkit.util.Consumer
 import org.bukkit.util.Vector
@@ -16,8 +18,6 @@ import taboolib.module.navigation.NodeEntity
 import taboolib.module.navigation.PathSmoothing
 import taboolib.module.navigation.RandomPositionGenerator
 import taboolib.module.navigation.createPathfinder
-import taboolib.platform.Folia
-import taboolib.platform.util.runTask
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -85,8 +85,9 @@ object PathFinderHandler {
         // 请求发起时间
         val startTime = System.currentTimeMillis()
         // Folia 的 GlobalRegionScheduler 不能同步等待区域任务；寻路始终在异步线程计算。
-        val async = Folia.isFolia || !AdyeshachSettings.pathfinderSync
-        if (Folia.isFolia && AdyeshachSettings.pathfinderSync && warnedSyncPathfinderOnFolia.compareAndSet(false, true)) {
+        val isFolia = FoliaRuntime.isFolia
+        val async = FoliaRuntime.shouldPathfindAsync(AdyeshachSettings.pathfinderSync)
+        if (isFolia && AdyeshachSettings.pathfinderSync && warnedSyncPathfinderOnFolia.compareAndSet(false, true)) {
             warning("Folia detected: Settings.pathfinder-sync=true is ignored; pathfinding runs asynchronously.")
         }
         submit(async = async) {
@@ -99,14 +100,14 @@ object PathFinderHandler {
                 // 最大 32 格的寻路请求
                 val findPath = pathFinder.findPath(target, distance = 64f)
                 // 调试模式下将显示路径节点
-                if (AdyeshachSettings.debug && !Folia.isFolia) {
+                if (AdyeshachSettings.debug && !isFolia) {
                     val display = Runnable { findPath?.nodes?.forEach { it.display(target.world!!) } }
                     display.run()
                 }
                 // TabooLib PathSmoothing 会在一个 region 中横向读取多个路径点；
                 // Folia 下跨 region 路径不能这样访问世界，保留原始路径节点。
                 val pointList = if (findPath != null) {
-                    if (Folia.isFolia) {
+                    if (isFolia) {
                         findPath.nodes.map { Vector(it.x + 0.5, it.y.toDouble(), it.z + 0.5) }.toMutableList()
                     } else {
                         PathSmoothing.smooth(findPath, nodeEntity).toMutableList()
@@ -143,11 +144,7 @@ object PathFinderHandler {
     }
 
     private fun dispatchResult(start: Location, call: Consumer<Result>, result: Result) {
-        if (Folia.isFolia) {
-            start.clone().runTask(Runnable { call.accept(result) })
-        } else {
-            call.accept(result)
-        }
+        start.clone().runOnRegion { call.accept(result) }
     }
 }
 

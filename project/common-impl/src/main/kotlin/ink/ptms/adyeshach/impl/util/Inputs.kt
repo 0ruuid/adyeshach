@@ -1,6 +1,7 @@
 package ink.ptms.adyeshach.impl.util
 
 import ink.ptms.adyeshach.core.Adyeshach
+import ink.ptms.adyeshach.core.util.runOnEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.player.PlayerEditBookEvent
 import org.bukkit.event.player.PlayerQuitEvent

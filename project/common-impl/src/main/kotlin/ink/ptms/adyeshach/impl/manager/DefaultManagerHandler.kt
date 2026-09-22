@@ -19,7 +19,7 @@ import taboolib.common.platform.function.submitAsync
 import taboolib.common.platform.function.warning
 import taboolib.common.platform.service.PlatformExecutor
 import taboolib.common.util.t
-import taboolib.platform.Folia
+import ink.ptms.adyeshach.core.util.FoliaRuntime
 import taboolib.platform.bukkit.parallel
 import taboolib.platform.util.submit as submitForEntity
 import taboolib.platform.util.onlinePlayers
@@ -52,6 +52,15 @@ object DefaultManagerHandler {
     private val foliaVisibilityTasks = ConcurrentHashMap<UUID, PlatformExecutor.PlatformTask>()
     private val foliaPlayers = ConcurrentHashMap<String, Player>()
 
+    /**
+     * Returns the player snapshot that is safe for the current threading model.
+     * Paper reads Bukkit's online collection; Folia uses the registry maintained
+     * by each player's EntityScheduler lifecycle.
+     */
+    fun getOnlinePlayers(): Collection<Player> {
+        return if (FoliaRuntime.isFolia) playersInGameTick else Bukkit.getOnlinePlayers()
+    }
+
     // 实体卡顿报告
     val entityReport = throttle<Player, Duration>(5000) { player, time ->
         warning(
@@ -75,7 +84,7 @@ object DefaultManagerHandler {
         // 私有管理器
         onlinePlayers.forEach { Adyeshach.api().setupEntityManager(it) }
         // 可见性更新。Folia 下由每个玩家的 EntityScheduler 执行，避免异步读取 Player/World。
-        if (!Folia.isFolia) {
+        if (!FoliaRuntime.isFolia) {
             submitAsync(period = AdyeshachSettings.visibleRefreshInterval.toLong()) {
                 playersInGameTick = Bukkit.getOnlinePlayers().filter { it.hasMetadata("adyeshach_setup") }
                 // 公共管理器
@@ -92,7 +101,7 @@ object DefaultManagerHandler {
             // 公共管理器
             DefaultAdyeshachBooster.api.localPublicEntityManager.onTick()
             DefaultAdyeshachBooster.api.localPublicEntityManagerTemporary.onTick()
-            if (Folia.isFolia) {
+            if (FoliaRuntime.isFolia) {
                 DefaultAdyeshachAPI.playerEntityTemporaryManagerMap.values().forEach { it.onTick() }
                 return@submit
             }
@@ -142,7 +151,7 @@ object DefaultManagerHandler {
     }
 
     internal fun startFoliaVisibilityTask(player: Player) {
-        if (!Folia.isFolia) return
+        if (!FoliaRuntime.isFolia) return
         foliaPlayers[player.name] = player
         playersInGameTick = foliaPlayers.values
         foliaVisibilityTasks.computeIfAbsent(player.uniqueId) {

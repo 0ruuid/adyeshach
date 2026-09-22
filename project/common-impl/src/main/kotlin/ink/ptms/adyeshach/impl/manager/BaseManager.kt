@@ -11,8 +11,6 @@ import ink.ptms.adyeshach.core.event.AdyeshachEntityLoadedEvent
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import taboolib.common.platform.function.warning
-import taboolib.platform.Folia
-import taboolib.platform.util.onlinePlayers
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.function.Consumer
@@ -32,7 +30,7 @@ open class BaseManager : Manager, ManagerService, TickService {
     }
 
     open fun getPlayers(): List<Player> {
-        return if (Folia.isFolia) DefaultManagerHandler.playersInGameTick.toList() else onlinePlayers
+        return DefaultManagerHandler.getOnlinePlayers().toList()
     }
 
     override fun create(entityTypes: EntityTypes, location: Location): EntityInstance {

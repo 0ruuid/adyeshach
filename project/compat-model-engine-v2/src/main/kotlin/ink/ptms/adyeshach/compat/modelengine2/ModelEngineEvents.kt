@@ -9,7 +9,7 @@ import ink.ptms.adyeshach.core.event.AdyeshachEntityDamageEvent
 import ink.ptms.adyeshach.core.event.AdyeshachEntityInteractEvent
 import ink.ptms.adyeshach.core.util.safeDistance
 import ink.ptms.adyeshach.impl.util.RayTrace
-import ink.ptms.adyeshach.impl.util.runOnRegion
+import ink.ptms.adyeshach.core.util.runOnRegion
 import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.util.Vector

@@ -8,10 +8,11 @@ import ink.ptms.adyeshach.core.event.AdyeshachEntityDamageEvent
 import ink.ptms.adyeshach.core.event.AdyeshachEntityInteractEvent
 import ink.ptms.adyeshach.core.event.AdyeshachEntityRemoveEvent
 import ink.ptms.adyeshach.core.event.AdyeshachEntityVisibleEvent
+import ink.ptms.adyeshach.core.util.FoliaRuntime
+import ink.ptms.adyeshach.core.util.runOnEntity
+import ink.ptms.adyeshach.core.util.runOnRegion
 import ink.ptms.adyeshach.impl.entity.trait.Trait
 import ink.ptms.adyeshach.impl.manager.DefaultManagerHandler
-import ink.ptms.adyeshach.impl.util.runOnEntity
-import ink.ptms.adyeshach.impl.util.runOnRegion
 import ink.ptms.adyeshach.impl.util.Inputs.inputBook
 import org.bukkit.entity.Player
 import taboolib.common.platform.Schedule
@@ -24,7 +25,6 @@ import taboolib.common5.clong
 import taboolib.module.kether.KetherShell
 import taboolib.module.kether.bool
 import taboolib.module.kether.runKether
-import taboolib.platform.Folia
 import java.util.concurrent.CompletableFuture
 
 object TraitViewCondition : Trait() {
@@ -35,11 +35,7 @@ object TraitViewCondition : Trait() {
     @Schedule(period = 20, async = true)
     fun update() {
         Adyeshach.api().getPublicEntityManager(ManagerType.PERSISTENT).getEntities { !it.isDerived() }.forEach { entity ->
-            if (Folia.isFolia) {
-                entity.runOnRegion { entity.updateTraitViewCondition() }
-            } else {
-                entity.updateTraitViewCondition()
-            }
+            entity.runOnRegion { entity.updateTraitViewCondition() }
         }
     }
 
@@ -153,8 +149,8 @@ fun EntityInstance.updateTraitViewCondition() {
         // 设置冷却
         setTag(TraitViewCondition.CHECK_TAG, System.currentTimeMillis() + (AdyeshachSettings.viewConditionInterval * 50))
         // Folia 下由玩家 EntityScheduler 读取玩家位置并应用可见性变化。
-        val players = if (Folia.isFolia) {
-            DefaultManagerHandler.playersInGameTick.filter { it.name in viewPlayers.viewers }
+        val players = if (FoliaRuntime.isFolia) {
+            DefaultManagerHandler.getOnlinePlayers().filter { it.name in viewPlayers.viewers }
         } else {
             viewPlayers.getPlayersInViewDistance()
         }
@@ -176,11 +172,11 @@ fun EntityInstance.updateTraitViewCondition() {
                                 visible(player, false)
                             }
                         }
-                        if (Folia.isFolia) player.runOnEntity(apply) else apply()
+                        player.runOnEntity(apply)
                     }
                 }
             }
-            if (Folia.isFolia) {
+            if (FoliaRuntime.isFolia) {
                 player.runOnEntity {
                     if (isInVisibleDistance(player)) {
                         evaluate()

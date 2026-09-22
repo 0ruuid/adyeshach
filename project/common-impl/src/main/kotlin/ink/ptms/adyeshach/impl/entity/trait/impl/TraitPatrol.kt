@@ -8,10 +8,10 @@ import ink.ptms.adyeshach.core.entity.path.PathFinderHandler
 import ink.ptms.adyeshach.core.entity.path.ResultNavigation
 import ink.ptms.adyeshach.core.event.AdyeshachEntityRemoveEvent
 import ink.ptms.adyeshach.core.util.plus
+import ink.ptms.adyeshach.core.util.runOnEntity
+import ink.ptms.adyeshach.core.util.runOnRegion
 import ink.ptms.adyeshach.impl.entity.trait.Trait
 import ink.ptms.adyeshach.impl.manager.DefaultManagerHandler
-import ink.ptms.adyeshach.impl.util.runOnEntity
-import ink.ptms.adyeshach.impl.util.runOnRegion
 import ink.ptms.adyeshach.impl.util.ChunkAccess
 import org.bukkit.*
 import org.bukkit.entity.Player
@@ -28,7 +28,6 @@ import taboolib.common.platform.function.warning
 import taboolib.common5.clong
 import taboolib.library.xseries.XMaterial
 import taboolib.module.configuration.util.mapListAs
-import taboolib.platform.Folia
 import taboolib.platform.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -51,11 +50,7 @@ object TraitPatrol : Trait() {
     fun process() {
         data.getKeys(false).forEach { id ->
             val entity = Adyeshach.api().getEntityFinder().getEntityFromUniqueId(id) ?: return@forEach
-            if (Folia.isFolia) {
-                entity.runOnRegion { process(entity) }
-            } else {
-                process(entity)
-            }
+            entity.runOnRegion { process(entity) }
         }
     }
 
@@ -94,13 +89,8 @@ object TraitPatrol : Trait() {
      */
     @Schedule(period = 20, async = true)
     fun edit() {
-        val players = if (Folia.isFolia) DefaultManagerHandler.playersInGameTick else Bukkit.getOnlinePlayers()
-        players.forEach { player ->
-            if (Folia.isFolia) {
-                player.runOnEntity { edit(player) }
-            } else {
-                edit(player)
-            }
+        DefaultManagerHandler.getOnlinePlayers().forEach { player ->
+            player.runOnEntity { edit(player) }
         }
     }
 

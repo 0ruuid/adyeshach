@@ -8,7 +8,7 @@ import ink.ptms.adyeshach.impl.getEntities
 import ink.ptms.adyeshach.impl.getManager
 import ink.ptms.adyeshach.impl.isEntitySelected
 import ink.ptms.adyeshach.impl.throwUndefinedError
-import ink.ptms.adyeshach.impl.util.runOnRegion
+import ink.ptms.adyeshach.core.util.runOnRegion
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import taboolib.common.util.isPlayer

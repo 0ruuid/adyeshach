@@ -7,7 +7,7 @@ import ink.ptms.adyeshach.core.entity.type.AdyEntityLiving
 import ink.ptms.adyeshach.core.util.toItem
 import ink.ptms.adyeshach.impl.entity.DefaultEquipable
 import ink.ptms.adyeshach.impl.util.ifTrue
-import ink.ptms.adyeshach.impl.util.runOnRegion
+import ink.ptms.adyeshach.core.util.runOnRegion
 import ink.ptms.adyeshach.impl.util.toRGB
 import org.bukkit.Material
 import org.bukkit.entity.Player

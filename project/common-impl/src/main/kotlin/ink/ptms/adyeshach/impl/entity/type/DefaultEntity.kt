@@ -6,7 +6,7 @@ import ink.ptms.adyeshach.core.entity.EntityTypes
 import ink.ptms.adyeshach.core.entity.type.AdyEntity
 import ink.ptms.adyeshach.impl.DefaultAdyeshachEntityFinder.Companion.clientEntityMap
 import ink.ptms.adyeshach.impl.entity.DefaultEntityInstance
-import ink.ptms.adyeshach.impl.util.runOnRegion
+import ink.ptms.adyeshach.core.util.runOnRegion
 import org.bukkit.entity.Player
 import java.util.concurrent.ConcurrentHashMap
 

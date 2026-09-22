@@ -1,12 +1,11 @@
 package ink.ptms.adyeshach.impl.manager
 
 import ink.ptms.adyeshach.core.entity.EntityInstance
+import ink.ptms.adyeshach.core.util.FoliaRuntime
+import ink.ptms.adyeshach.core.util.runOnRegion
 import ink.ptms.adyeshach.impl.DefaultAdyeshachAPI
 import ink.ptms.adyeshach.impl.entity.DefaultEntityInstance
 import org.bukkit.entity.Player
-import taboolib.platform.Folia
-import taboolib.platform.util.runTask
-import taboolib.platform.util.onlinePlayers
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Predicate
 
@@ -31,7 +30,7 @@ open class DefaultManager : BaseManager() {
     private val foliaTickPending: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     override fun getPlayers(): List<Player> {
-        return if (Folia.isFolia) DefaultManagerHandler.playersInGameTick.toList() else onlinePlayers
+        return DefaultManagerHandler.getOnlinePlayers().toList()
     }
 
     override fun add(entity: EntityInstance) {
@@ -99,11 +98,11 @@ open class DefaultManager : BaseManager() {
     }
 
     override fun onTick() {
-        if (Folia.isFolia) {
+        if (FoliaRuntime.isFolia) {
             tickableEntities.forEach { entity ->
                 val instance = entity as? DefaultEntityInstance ?: return@forEach
                 if (!foliaTickPending.add(instance.uniqueId)) return@forEach
-                instance.getLocation().runTask(Runnable {
+                instance.runOnRegion {
                     try {
                         if (DefaultAdyeshachAPI.localEventBus.callTick(instance)) {
                             instance.onTick()
@@ -111,7 +110,7 @@ open class DefaultManager : BaseManager() {
                     } finally {
                         foliaTickPending.remove(instance.uniqueId)
                     }
-                })
+                }
             }
             return
         }

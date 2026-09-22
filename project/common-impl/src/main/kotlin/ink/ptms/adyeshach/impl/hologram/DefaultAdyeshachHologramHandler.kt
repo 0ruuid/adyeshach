@@ -4,7 +4,7 @@ import ink.ptms.adyeshach.core.Adyeshach
 import ink.ptms.adyeshach.core.AdyeshachHologram
 import ink.ptms.adyeshach.core.AdyeshachHologramHandler
 import ink.ptms.adyeshach.core.entity.manager.ManagerType
-import ink.ptms.adyeshach.impl.util.runOnRegion
+import ink.ptms.adyeshach.core.util.runOnRegion
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack

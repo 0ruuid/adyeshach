@@ -3,13 +3,13 @@
 package ink.ptms.adyeshach.module.command.subcommand
 
 import ink.ptms.adyeshach.core.util.sendLang
+import ink.ptms.adyeshach.core.util.scheduleOnEntity
 import ink.ptms.adyeshach.module.command.*
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import taboolib.common.platform.command.location
 import taboolib.common.platform.command.subCommand
-import taboolib.platform.util.runTask
 import taboolib.platform.util.toBukkitLocation
 import taboolib.platform.util.toProxyLocation
 
@@ -86,11 +86,11 @@ val tpSubCommand = subCommand {
 private fun Player.teleportCompat(location: Location, onSuccess: () -> Unit) {
     teleportAsync(location).thenAccept { success ->
         if (success == true) {
-            runTask(Runnable {
+            scheduleOnEntity {
                 if (isOnline) {
                     onSuccess()
                 }
-            })
+            }
         }
     }
 }

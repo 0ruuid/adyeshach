@@ -3,8 +3,6 @@ package ink.ptms.adyeshach.impl.manager
 import ink.ptms.adyeshach.core.AdyeshachSettings
 import ink.ptms.adyeshach.core.entity.EntityInstance
 import ink.ptms.adyeshach.core.serializer.UnknownWorldException
-import org.bukkit.Bukkit
-import taboolib.platform.Folia
 import taboolib.common.io.digest
 import taboolib.common.io.newFile
 import taboolib.common.io.newFolder
@@ -76,8 +74,7 @@ open class LocalPersistentManager : DefaultManager() {
     override fun loadEntityFromFile(file: File): EntityInstance {
         val entity = super.loadEntityFromFile(file)
         if (entity.visibleAfterLoaded) {
-            val players = if (Folia.isFolia) DefaultManagerHandler.playersInGameTick else Bukkit.getOnlinePlayers()
-            players.forEach { p -> entity.viewPlayers.viewers += p.name }
+            DefaultManagerHandler.getOnlinePlayers().forEach { p -> entity.viewPlayers.viewers += p.name }
         }
         return entity
     }

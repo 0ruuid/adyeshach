@@ -9,12 +9,11 @@ import ink.ptms.adyeshach.core.Adyeshach
 import ink.ptms.adyeshach.core.event.AdyeshachEntityDamageEvent
 import ink.ptms.adyeshach.core.event.AdyeshachEntityInteractEvent
 import ink.ptms.adyeshach.core.event.AdyeshachPlayerJoinEvent
+import ink.ptms.adyeshach.core.util.FoliaRuntime
+import ink.ptms.adyeshach.core.util.runOnEntity
 import ink.ptms.adyeshach.core.util.safeDistance
 import org.bukkit.entity.Player
 import org.bukkit.util.Vector
-import taboolib.common.platform.function.submit
-import taboolib.platform.Folia
-import taboolib.platform.util.runTask
 
 /**
  * 使用 SimplePacketListenerAbstract，仅接收 PLAY 阶段包
@@ -58,18 +57,10 @@ class AdyeshachPacketListener : SimplePacketListenerAbstract() {
     }
 
     private fun runForPlayer(player: Player, action: () -> Unit) {
-        if (Folia.isFolia) {
-            player.runTask(Runnable { action() })
-        } else {
-            action()
-        }
+        player.runOnEntity(action)
     }
 
     private fun dispatchInteraction(action: () -> Unit) {
-        if (Folia.isFolia) {
-            action()
-        } else {
-            submit { action() }
-        }
+        FoliaRuntime.runOnPaperMainOrCurrent(action)
     }
 }

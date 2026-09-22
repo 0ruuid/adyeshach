@@ -15,15 +15,14 @@ import ink.ptms.adyeshach.core.util.getEnum
 import ink.ptms.adyeshach.impl.network.NetworkMineskin
 import ink.ptms.adyeshach.impl.manager.DefaultManagerHandler
 import ink.ptms.adyeshach.impl.util.ifTrue
-import ink.ptms.adyeshach.impl.util.runOnEntity
+import ink.ptms.adyeshach.core.util.runOnEntity
 import org.bukkit.entity.Player
 import taboolib.common.platform.Schedule
 import taboolib.common.platform.function.submitAsync
-import taboolib.platform.Folia
+import ink.ptms.adyeshach.core.util.FoliaRuntime
 import taboolib.common5.cbool
 import taboolib.common5.cint
 import taboolib.module.chat.colored
-import taboolib.platform.util.onlinePlayers
 import java.util.*
 
 /**
@@ -295,9 +294,9 @@ abstract class DefaultHuman(entityTypes: EntityTypes) : DefaultEntityLiving(enti
         internal fun playerTextureRefresh200() {
             val finder = Adyeshach.api().getEntityFinder()
             var i = 0L
-            val viewers = if (Folia.isFolia) DefaultManagerHandler.playersInGameTick else onlinePlayers
+            val viewers = DefaultManagerHandler.getOnlinePlayers()
             viewers.forEach { viewer ->
-                if (Folia.isFolia) {
+                if (FoliaRuntime.isFolia) {
                     viewer.runOnEntity {
                         finder.getVisibleEntities(viewer).filterIsInstance<AdyHuman>().forEach { human ->
                             human.refreshPlayerInfo(viewer)

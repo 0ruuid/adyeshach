@@ -6,7 +6,7 @@ import ink.ptms.adyeshach.core.Adyeshach
 import ink.ptms.adyeshach.core.MinecraftMeta
 import ink.ptms.adyeshach.core.MinecraftPacketHandler
 import org.bukkit.entity.Player
-import taboolib.platform.Folia
+import ink.ptms.adyeshach.core.util.FoliaRuntime
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -19,7 +19,7 @@ class PEPacketHandler : MinecraftPacketHandler {
     private val metaBuffer = ConcurrentHashMap<Player, ConcurrentLinkedQueue<BufferPacket>>()
 
     override fun sendPacket(player: List<Player>, packet: Any) {
-        if (Folia.isFolia) {
+        if (FoliaRuntime.isFolia) {
             player.forEach { sendNow(it, packet) }
             return
         }
@@ -29,7 +29,7 @@ class PEPacketHandler : MinecraftPacketHandler {
     }
 
     override fun bufferMetadataPacket(player: List<Player>, id: Int, packet: MinecraftMeta) {
-        if (Folia.isFolia) {
+        if (FoliaRuntime.isFolia) {
             val metadataHandler = Adyeshach.api().getMinecraftAPI().getEntityMetadataHandler()
             player.forEach { sendNow(it, metadataHandler.createMetadataPacket(id, listOf(packet))) }
             return

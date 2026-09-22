@@ -5,7 +5,7 @@ import ink.ptms.adyeshach.core.entity.EntityFireball
 import ink.ptms.adyeshach.core.entity.EntityThrowable
 import ink.ptms.adyeshach.core.entity.type.AdyMinecart
 import ink.ptms.adyeshach.core.event.AdyeshachEntityCreateEvent
-import ink.ptms.adyeshach.impl.util.runOnEntity
+import ink.ptms.adyeshach.core.util.runOnEntity
 import org.bukkit.event.player.PlayerRespawnEvent
 import taboolib.common.platform.event.EventPriority
 import taboolib.common.platform.event.SubscribeEvent

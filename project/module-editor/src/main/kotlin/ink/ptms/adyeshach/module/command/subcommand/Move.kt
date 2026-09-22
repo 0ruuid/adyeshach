@@ -4,7 +4,7 @@ package ink.ptms.adyeshach.module.command.subcommand
 
 import ink.ptms.adyeshach.core.util.sendLang
 import ink.ptms.adyeshach.module.command.*
-import ink.ptms.adyeshach.impl.util.runOnRegion
+import ink.ptms.adyeshach.core.util.runOnRegion
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player

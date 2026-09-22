@@ -5,7 +5,7 @@ import ink.ptms.adyeshach.core.entity.EntityTypes
 import ink.ptms.adyeshach.core.entity.type.AdyItem
 import ink.ptms.adyeshach.core.util.toItem
 import ink.ptms.adyeshach.impl.util.ifTrue
-import ink.ptms.adyeshach.impl.util.runOnRegion
+import ink.ptms.adyeshach.core.util.runOnRegion
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
