@@ -31,6 +31,7 @@ import org.bukkit.util.Vector
 import taboolib.common5.Baffle
 import taboolib.library.configuration.ConfigurationSection
 import taboolib.module.nms.MinecraftVersion
+import taboolib.platform.Folia
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentSkipListSet
@@ -230,7 +231,7 @@ abstract class DefaultEntityInstance(entityType: EntityTypes = EntityTypes.ZOMBI
         PathFinderHandler.request(position.toLocation(), moveTarget!!, entityPathType) {
             it as ResultNavigation
             removeTag(StandardTags.IS_PATHFINDING)
-            controllerMoveBy(it.pointList.map { v -> v.toLocation(world) })
+            controllerMoveBy(it.pointList.map { v -> v.toLocation(world) }, fixHeight = !Folia.isFolia)
         }
     }
 
@@ -346,6 +347,7 @@ abstract class DefaultEntityInstance(entityType: EntityTypes = EntityTypes.ZOMBI
     override fun prepareSpawn(viewer: Player, spawn: Runnable) = lifecycleHandler.prepareSpawn(viewer, spawn)
     override fun prepareDestroy(viewer: Player, destroy: Runnable) = lifecycleHandler.prepareDestroy(viewer, destroy)
     override fun checkVisible() = visibilityHandler.checkVisible()
+    internal fun checkVisible(player: Player) = visibilityHandler.checkVisible(player)
 
     // ═══════════════════════════════════════════════════════════════════════════════
     // 委托方法 - Position

@@ -13,6 +13,8 @@ import ink.ptms.adyeshach.core.util.safeDistance
 import org.bukkit.entity.Player
 import org.bukkit.util.Vector
 import taboolib.common.platform.function.submit
+import taboolib.platform.Folia
+import taboolib.platform.util.runTask
 
 /**
  * 使用 SimplePacketListenerAbstract，仅接收 PLAY 阶段包
@@ -21,36 +23,53 @@ class AdyeshachPacketListener : SimplePacketListenerAbstract() {
 
     override fun onPacketPlayReceive(event: PacketPlayReceiveEvent) {
         val player = event.getPlayer<Player>() ?: return
-        if (player !is Player) return
-
         when (event.packetType) {
             Client.PLAYER_POSITION,
             Client.PLAYER_POSITION_AND_ROTATION,
             Client.PLAYER_ROTATION -> {
-                if (player.name !in DefaultPlayerEvents.onlinePlayerSet) {
-                    DefaultPlayerEvents.onlinePlayerSet += player.name
-                    AdyeshachPlayerJoinEvent(player).call()
+                if (DefaultPlayerEvents.onlinePlayerSet.add(player.name)) {
+                    runForPlayer(player) { AdyeshachPlayerJoinEvent(player).call() }
                 }
             }
             Client.INTERACT_ENTITY -> {
                 val wrapper = WrapperPlayClientInteractEntity(event)
-                val entity = Adyeshach.api().getEntityFinder().getEntityFromEntityId(wrapper.entityId, player) ?: return
-                if (entity.isViewer(player) && entity.getLocation().safeDistance(player.location) < 10) {
-                    when (wrapper.action) {
+                val entityId = wrapper.entityId
+                val action = wrapper.action
+                val target = wrapper.target.map { Vector(it.x.toDouble(), it.y.toDouble(), it.z.toDouble()) }.orElse(Vector(0, 0, 0))
+                val hand = wrapper.hand == InteractionHand.MAIN_HAND
+                runForPlayer(player) {
+                    val entity = Adyeshach.api().getEntityFinder().getEntityFromEntityId(entityId, player) ?: return@runForPlayer
+                    if (!entity.isViewer(player) || entity.getLocation().safeDistance(player.location) >= 10) {
+                        return@runForPlayer
+                    }
+                    when (action) {
                         WrapperPlayClientInteractEntity.InteractAction.ATTACK -> {
-                            submit { AdyeshachEntityDamageEvent(entity, player).call() }
+                            dispatchInteraction { AdyeshachEntityDamageEvent(entity, player).call() }
                         }
                         WrapperPlayClientInteractEntity.InteractAction.INTERACT_AT -> {
-                            val target = wrapper.target
-                            val vector = target.map { Vector(it.x.toDouble(), it.y.toDouble(), it.z.toDouble()) }.orElse(Vector(0, 0, 0))
-                            val hand = wrapper.hand == InteractionHand.MAIN_HAND
-                            submit { AdyeshachEntityInteractEvent(entity, player, hand, vector).call() }
+                            dispatchInteraction { AdyeshachEntityInteractEvent(entity, player, hand, target).call() }
                         }
                         else -> {}
                     }
                 }
             }
             else -> {}
+        }
+    }
+
+    private fun runForPlayer(player: Player, action: () -> Unit) {
+        if (Folia.isFolia) {
+            player.runTask(Runnable { action() })
+        } else {
+            action()
+        }
+    }
+
+    private fun dispatchInteraction(action: () -> Unit) {
+        if (Folia.isFolia) {
+            action()
+        } else {
+            submit { action() }
         }
     }
 }

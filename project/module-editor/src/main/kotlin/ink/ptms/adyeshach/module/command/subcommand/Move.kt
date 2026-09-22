@@ -4,6 +4,7 @@ package ink.ptms.adyeshach.module.command.subcommand
 
 import ink.ptms.adyeshach.core.util.sendLang
 import ink.ptms.adyeshach.module.command.*
+import ink.ptms.adyeshach.impl.util.runOnRegion
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
@@ -34,7 +35,9 @@ val moveSubCommand = subCommand {
                         sender.sendLang("command-move-has-vehicle", ctx["id"], it.getVehicle()!!.id)
                         return@multiControl
                     }
-                    it.moveTarget = sender.location
+                    val entity = it
+                    val target = sender.location.clone()
+                    entity.runOnRegion { entity.moveTarget = target }
                     if (!sender.isIgnoreNotice()) {
                         sender.sendLang("command-move-to-here", it.id)
                     }
@@ -51,7 +54,8 @@ val moveSubCommand = subCommand {
                     }
                     val origin = it.getLocation().toProxyLocation()
                     val loc = Location(it.world, ctx.x("x", origin), ctx.y("y", origin), ctx.z("z", origin))
-                    it.moveTarget = loc
+                    val entity = it
+                    entity.runOnRegion { entity.moveTarget = loc }
                     if (!sender.isIgnoreNotice()) {
                         sender.sendLang("command-move-to-location", it.id, format(loc.x), format(loc.y), format(loc.z))
                     }

@@ -17,9 +17,14 @@ import taboolib.common.platform.function.getDataFolder
 import taboolib.common.platform.function.submit
 import taboolib.common.platform.function.submitAsync
 import taboolib.common.platform.function.warning
+import taboolib.common.platform.service.PlatformExecutor
 import taboolib.common.util.t
+import taboolib.platform.Folia
 import taboolib.platform.bukkit.parallel
+import taboolib.platform.util.submit as submitForEntity
 import taboolib.platform.util.onlinePlayers
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
@@ -44,6 +49,9 @@ object DefaultManagerHandler {
     // 是否首次触发（通常视为预热）
     var isFirstReport = true
 
+    private val foliaVisibilityTasks = ConcurrentHashMap<UUID, PlatformExecutor.PlatformTask>()
+    private val foliaPlayers = ConcurrentHashMap<String, Player>()
+
     // 实体卡顿报告
     val entityReport = throttle<Player, Duration>(5000) { player, time ->
         warning(
@@ -66,15 +74,17 @@ object DefaultManagerHandler {
         DefaultAdyeshachBooster.api.localPublicEntityManager.onEnable()
         // 私有管理器
         onlinePlayers.forEach { Adyeshach.api().setupEntityManager(it) }
-        // 可见性更新
-        submitAsync(period = AdyeshachSettings.visibleRefreshInterval.toLong()) {
-            playersInGameTick = Bukkit.getOnlinePlayers().filter { it.hasMetadata("adyeshach_setup") }
-            // 公共管理器
-            DefaultAdyeshachBooster.api.localPublicEntityManager.checkVisible()
-            DefaultAdyeshachBooster.api.localPublicEntityManagerTemporary.checkVisible()
-            // 私有管理器
-            playersInGameTick.forEach { player ->
-                DefaultAdyeshachAPI.playerEntityTemporaryManagerMap[player]?.checkVisible()
+        // 可见性更新。Folia 下由每个玩家的 EntityScheduler 执行，避免异步读取 Player/World。
+        if (!Folia.isFolia) {
+            submitAsync(period = AdyeshachSettings.visibleRefreshInterval.toLong()) {
+                playersInGameTick = Bukkit.getOnlinePlayers().filter { it.hasMetadata("adyeshach_setup") }
+                // 公共管理器
+                DefaultAdyeshachBooster.api.localPublicEntityManager.checkVisible()
+                DefaultAdyeshachBooster.api.localPublicEntityManagerTemporary.checkVisible()
+                // 私有管理器
+                playersInGameTick.forEach { player ->
+                    DefaultAdyeshachAPI.playerEntityTemporaryManagerMap[player]?.checkVisible()
+                }
             }
         }
         // Tick
@@ -82,6 +92,10 @@ object DefaultManagerHandler {
             // 公共管理器
             DefaultAdyeshachBooster.api.localPublicEntityManager.onTick()
             DefaultAdyeshachBooster.api.localPublicEntityManagerTemporary.onTick()
+            if (Folia.isFolia) {
+                DefaultAdyeshachAPI.playerEntityTemporaryManagerMap.values().forEach { it.onTick() }
+                return@submit
+            }
             // 私有管理器
             DefaultAdyeshachAPI.playerEntityTemporaryManagerMap.values().forEach { manager ->
                 val time = measureTime { manager.onTick() }
@@ -115,12 +129,51 @@ object DefaultManagerHandler {
 
     @Awake(LifeCycle.DISABLE)
     private fun onDisable() {
+        foliaVisibilityTasks.values.forEach { it.cancel() }
+        foliaVisibilityTasks.clear()
+        foliaPlayers.clear()
+        playersInGameTick = emptyList()
         // 公共管理器
         DefaultAdyeshachBooster.api.localPublicEntityManagerTemporary.onDisable()
         DefaultAdyeshachBooster.api.localPublicEntityManager.onDisable()
         DefaultAdyeshachBooster.api.localPublicEntityManager.onSave()
         // 私有管理器
         onlinePlayers.forEach { Adyeshach.api().releaseEntityManager(it, false) }
+    }
+
+    internal fun startFoliaVisibilityTask(player: Player) {
+        if (!Folia.isFolia) return
+        foliaPlayers[player.name] = player
+        playersInGameTick = foliaPlayers.values
+        foliaVisibilityTasks.computeIfAbsent(player.uniqueId) {
+            player.submitForEntity(delay = 1, period = AdyeshachSettings.visibleRefreshInterval.toLong()) {
+                if (!player.isOnline || !player.hasMetadata("adyeshach_setup")) {
+                    cancel()
+                    foliaVisibilityTasks.remove(player.uniqueId)
+                    foliaPlayers.remove(player.name)
+                    playersInGameTick = foliaPlayers.values
+                } else {
+                    refreshFoliaVisibility(player)
+                }
+            }
+        }
+    }
+
+    internal fun stopFoliaVisibilityTask(player: Player) {
+        foliaVisibilityTasks.remove(player.uniqueId)?.cancel()
+        foliaPlayers.remove(player.name)
+        playersInGameTick = foliaPlayers.values
+    }
+
+    private fun refreshFoliaVisibility(player: Player) {
+        fun check(manager: BaseManager) {
+            manager.getEntities().forEach { entity ->
+                (entity as? DefaultEntityInstance)?.checkVisible(player)
+            }
+        }
+        check(DefaultAdyeshachBooster.api.localPublicEntityManager)
+        check(DefaultAdyeshachBooster.api.localPublicEntityManagerTemporary)
+        DefaultAdyeshachAPI.playerEntityTemporaryManagerMap[player]?.let(::check)
     }
 
     fun dump(player: Player) {

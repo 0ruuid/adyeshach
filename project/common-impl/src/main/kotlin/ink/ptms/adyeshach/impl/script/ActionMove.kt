@@ -6,6 +6,7 @@ import ink.ptms.adyeshach.impl.getEntities
 import ink.ptms.adyeshach.impl.getManager
 import ink.ptms.adyeshach.impl.isEntitySelected
 import ink.ptms.adyeshach.impl.throwUndefinedError
+import ink.ptms.adyeshach.impl.util.runOnRegion
 import org.bukkit.Location
 import taboolib.common.platform.function.info
 import taboolib.common.platform.function.submit
@@ -59,15 +60,14 @@ private fun actionMove() = combinationParser {
                     script.throwUndefinedError()
                 }
                 script.getEntities().forEach { e ->
-                    if (to is Location) {
-                        e.moveTarget = to
+                    val target = if (to is Location) {
+                        to.clone()
                     } else if (relative != null) {
-                        val moveTo = Location(e.world, e.x + (x ?: 0.0), e.y + (y ?: 0.0), e.z + (z ?: 0.0))
-                        e.moveTarget = moveTo
+                        Location(e.world, e.x + (x ?: 0.0), e.y + (y ?: 0.0), e.z + (z ?: 0.0))
                     } else {
-                        val moveTo = Location(e.world, x ?: e.x, y ?: e.y, z ?: e.z)
-                        e.moveTarget = moveTo
+                        Location(e.world, x ?: e.x, y ?: e.y, z ?: e.z)
                     }
+                    e.runOnRegion { e.moveTarget = target }
                 }
             }
         }

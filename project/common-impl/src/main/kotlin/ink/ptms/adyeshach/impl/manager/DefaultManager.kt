@@ -4,6 +4,8 @@ import ink.ptms.adyeshach.core.entity.EntityInstance
 import ink.ptms.adyeshach.impl.DefaultAdyeshachAPI
 import ink.ptms.adyeshach.impl.entity.DefaultEntityInstance
 import org.bukkit.entity.Player
+import taboolib.platform.Folia
+import taboolib.platform.util.runTask
 import taboolib.platform.util.onlinePlayers
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Predicate
@@ -26,6 +28,7 @@ open class DefaultManager : BaseManager() {
      * 可 tick 的实体索引（有可见玩家的实体）
      */
     val tickableEntities: MutableSet<EntityInstance> = ConcurrentHashMap.newKeySet()
+    private val foliaTickPending: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     override fun getPlayers(): List<Player> {
         return onlinePlayers
@@ -48,6 +51,7 @@ open class DefaultManager : BaseManager() {
         activeEntityByUniqueId.remove(entityInstance.uniqueId)
         activeEntityByIndex.remove(entityInstance.index)
         tickableEntities.remove(entityInstance)
+        foliaTickPending.remove(entityInstance.uniqueId)
     }
 
     override fun getEntities(): List<EntityInstance> {
@@ -95,6 +99,22 @@ open class DefaultManager : BaseManager() {
     }
 
     override fun onTick() {
+        if (Folia.isFolia) {
+            tickableEntities.forEach { entity ->
+                val instance = entity as? DefaultEntityInstance ?: return@forEach
+                if (!foliaTickPending.add(instance.uniqueId)) return@forEach
+                instance.getLocation().runTask(Runnable {
+                    try {
+                        if (DefaultAdyeshachAPI.localEventBus.callTick(instance)) {
+                            instance.onTick()
+                        }
+                    } finally {
+                        foliaTickPending.remove(instance.uniqueId)
+                    }
+                })
+            }
+            return
+        }
         // 优化：只遍历有可见玩家的实体，而不是全部实体
         tickableEntities.forEach {
             // 事件处理

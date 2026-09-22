@@ -14,10 +14,11 @@ import ink.ptms.adyeshach.core.event.AdyeshachPlayerUUIDGenerateEvent
 import ink.ptms.adyeshach.core.util.getEnum
 import ink.ptms.adyeshach.impl.network.NetworkMineskin
 import ink.ptms.adyeshach.impl.util.ifTrue
+import ink.ptms.adyeshach.impl.util.runOnEntity
 import org.bukkit.entity.Player
 import taboolib.common.platform.Schedule
-import taboolib.common.platform.function.submit
 import taboolib.common.platform.function.submitAsync
+import taboolib.platform.Folia
 import taboolib.common5.cbool
 import taboolib.common5.cint
 import taboolib.module.chat.colored
@@ -83,17 +84,17 @@ abstract class DefaultHuman(entityTypes: EntityTypes) : DefaultEntityLiving(enti
                 // 启用皮肤
                 setSkinEnabled(true)
                 // 修复装备无法正常显示的问题
-                submit(delay = 1) {
+                viewer.runOnEntity(delay = 1) {
                     updateEquipment(viewer)
                 }
                 // 更新状态
-                submit(delay = 5) {
+                viewer.runOnEntity(delay = 5) {
                     if (isDie) die(viewer = viewer)
                     if (isSleepingLegacy) setSleeping(true)
                 }
                 // 在低版本中，如果玩家被隐藏，则需要延迟 10  ticks 后移除玩家信息
                 if (isHideFromTabList && !GameProfile.isListedSupported) {
-                    submit(delay = 10) { removePlayerInfo(viewer) }
+                    viewer.runOnEntity(delay = 10) { removePlayerInfo(viewer) }
                 }
                 spawned = true
             }
@@ -258,7 +259,7 @@ abstract class DefaultHuman(entityTypes: EntityTypes) : DefaultEntityLiving(enti
         removePlayerInfo(viewer)
         addPlayerInfo(viewer)
         // 短暂延迟后删除玩家信息
-        submit(delay = 10) {
+        viewer.runOnEntity(delay = 10) {
             if (isHideFromTabList && !GameProfile.isListedSupported) {
                 removePlayerInfo(viewer)
             }
@@ -293,10 +294,18 @@ abstract class DefaultHuman(entityTypes: EntityTypes) : DefaultEntityLiving(enti
         internal fun playerTextureRefresh200() {
             val finder = Adyeshach.api().getEntityFinder()
             var i = 0L
-            onlinePlayers.forEach {
-                submitAsync(delay = i++) {
-                    finder.getVisibleEntities(it).filterIsInstance<AdyHuman>().forEach { human ->
-                        human.refreshPlayerInfo(it)
+            onlinePlayers.forEach { viewer ->
+                if (Folia.isFolia) {
+                    viewer.runOnEntity {
+                        finder.getVisibleEntities(viewer).filterIsInstance<AdyHuman>().forEach { human ->
+                            human.refreshPlayerInfo(viewer)
+                        }
+                    }
+                } else {
+                    submitAsync(delay = i++) {
+                        finder.getVisibleEntities(viewer).filterIsInstance<AdyHuman>().forEach { human ->
+                            human.refreshPlayerInfo(viewer)
+                        }
                     }
                 }
             }

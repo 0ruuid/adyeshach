@@ -6,8 +6,8 @@ import ink.ptms.adyeshach.core.entity.EntityTypes
 import ink.ptms.adyeshach.core.entity.type.AdyEntity
 import ink.ptms.adyeshach.impl.DefaultAdyeshachEntityFinder.Companion.clientEntityMap
 import ink.ptms.adyeshach.impl.entity.DefaultEntityInstance
+import ink.ptms.adyeshach.impl.util.runOnRegion
 import org.bukkit.entity.Player
-import taboolib.common.platform.function.submit
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -36,7 +36,7 @@ abstract class DefaultEntity(entityType: EntityTypes) : DefaultEntityInstance(en
                 // 强制更新一次视角朝向，确保让一些特殊的实体看向正确的位置
                 // 矿车，凋零头
                 if (isRotationFixOnSpawn) {
-                    submit(delay = 5) { setHeadRotation(yaw, pitch, forceUpdate = true) }
+                    runOnRegion(delay = 5) { setHeadRotation(yaw, pitch, forceUpdate = true) }
                 }
             }
         } else {

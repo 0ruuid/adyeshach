@@ -79,6 +79,7 @@ class DefaultAdyeshachAPI : AdyeshachAPI {
             getPublicEntityManager(ManagerType.TEMPORARY).getEntities { it.visibleAfterLoaded }.forEach { it.viewPlayers.viewers += player.name }
             // 已完成状态加载
             AdyeshachPlayerSetupEvent(player).call()
+            DefaultManagerHandler.startFoliaVisibilityTask(player)
         } else {
             // 重复执行警告
             warning(
@@ -91,6 +92,7 @@ class DefaultAdyeshachAPI : AdyeshachAPI {
     }
 
     override fun releaseEntityManager(player: Player, async: Boolean) {
+        DefaultManagerHandler.stopFoliaVisibilityTask(player)
         if (player.hasMetadata("adyeshach_setup")) {
             player.removeMeta("adyeshach_setup")
             // 公共管理器

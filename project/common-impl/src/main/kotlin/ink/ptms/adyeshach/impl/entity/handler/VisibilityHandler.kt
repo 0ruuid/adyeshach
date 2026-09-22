@@ -30,6 +30,16 @@ open class VisibilityHandler(protected val self: DefaultEntityInstance) {
     }
 
     /**
+     * 在观察者所属线程中刷新单个玩家的可见性。
+     * Folia 下不能从全局/异步任务直接读取玩家位置。
+     */
+    open fun checkVisible(player: Player) {
+        if (!self.isCompanion()) {
+            handleVisible(player)
+        }
+    }
+
+    /**
      * 同步到载具位置
      */
     protected open fun syncVehiclePosition() {

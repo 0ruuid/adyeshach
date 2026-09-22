@@ -5,11 +5,11 @@ import ink.ptms.adyeshach.core.entity.EntityTypes
 import ink.ptms.adyeshach.core.entity.type.AdyItem
 import ink.ptms.adyeshach.core.util.toItem
 import ink.ptms.adyeshach.impl.util.ifTrue
+import ink.ptms.adyeshach.impl.util.runOnRegion
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.util.Vector
-import taboolib.common.platform.function.submit
 
 /**
  * Adyeshach
@@ -34,7 +34,7 @@ abstract class DefaultItem(entityTypes: EntityTypes) : DefaultEntity(entityTypes
                 // 生成实体
                 Adyeshach.api().getMinecraftAPI().getEntitySpawner().spawnEntity(viewer, entityType, index, normalizeUniqueId, clientPosition.toLocation())
                 // 修正向量
-                submit(delay = 1) {
+                runOnRegion(delay = 1) {
                     setNoGravity(true)
                     sendVelocity(Vector(0, 0, 0))
                 }

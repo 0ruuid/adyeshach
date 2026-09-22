@@ -4,10 +4,12 @@ package ink.ptms.adyeshach.module.command.subcommand
 
 import ink.ptms.adyeshach.core.util.sendLang
 import ink.ptms.adyeshach.module.command.*
+import org.bukkit.Location
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import taboolib.common.platform.command.location
 import taboolib.common.platform.command.subCommand
+import taboolib.platform.util.runTask
 import taboolib.platform.util.toBukkitLocation
 import taboolib.platform.util.toProxyLocation
 
@@ -27,9 +29,10 @@ val tpSubCommand = subCommand {
         // 定向传送
         execute<Player> { sender, ctx, _ ->
             multiControl<EntitySource.Empty>(sender, ctx.self(), STANDARD_TP_TRACKER, unified = false) {
-                sender.teleport(it.getLocation())
-                if (!sender.isIgnoreNotice()) {
-                    sender.sendLang("command-teleport-to-entity", it.id)
+                sender.teleportCompat(it.getLocation()) {
+                    if (!sender.isIgnoreNotice()) {
+                        sender.sendLang("command-teleport-to-entity", it.id)
+                    }
                 }
             }
         }
@@ -73,8 +76,21 @@ val tpSubCommand = subCommand {
     // 就近传送
     execute<Player> { sender, _, _ ->
         multiControl<RemoveEntitySource>(sender, STANDARD_TP_TRACKER) {
-            sender.teleport(it.getLocation())
-            sender.sendLang("command-teleport-to-entity", it.id)
+            sender.teleportCompat(it.getLocation()) {
+                sender.sendLang("command-teleport-to-entity", it.id)
+            }
+        }
+    }
+}
+
+private fun Player.teleportCompat(location: Location, onSuccess: () -> Unit) {
+    teleportAsync(location).thenAccept { success ->
+        if (success == true) {
+            runTask(Runnable {
+                if (isOnline) {
+                    onSuccess()
+                }
+            })
         }
     }
 }

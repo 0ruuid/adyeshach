@@ -10,12 +10,16 @@ import taboolib.common.io.newFile
 import taboolib.common.platform.function.getDataFolder
 import taboolib.common.platform.function.submit
 import taboolib.common.platform.function.submitAsync
+import taboolib.common.platform.function.warning
 import taboolib.common5.util.getStackTraceString
 import taboolib.module.navigation.NodeEntity
 import taboolib.module.navigation.PathSmoothing
 import taboolib.module.navigation.RandomPositionGenerator
 import taboolib.module.navigation.createPathfinder
+import taboolib.platform.Folia
+import taboolib.platform.util.runTask
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * @author sky
@@ -24,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap
 object PathFinderHandler {
 
     val tracker = ConcurrentHashMap<String, Int>()
+    private val warnedSyncPathfinderOnFolia = AtomicBoolean()
 
     /**
      * 请求寻路路径
@@ -79,8 +84,12 @@ object PathFinderHandler {
         }
         // 请求发起时间
         val startTime = System.currentTimeMillis()
-        // 是否同步执行代码
-        submit(async = !AdyeshachSettings.pathfinderSync) {
+        // Folia 的 GlobalRegionScheduler 不能同步等待区域任务；寻路始终在异步线程计算。
+        val async = Folia.isFolia || !AdyeshachSettings.pathfinderSync
+        if (Folia.isFolia && AdyeshachSettings.pathfinderSync && warnedSyncPathfinderOnFolia.compareAndSet(false, true)) {
+            warning("Folia detected: Settings.pathfinder-sync=true is ignored; pathfinding runs asynchronously.")
+        }
+        submit(async = async) {
             // 请求开始时间
             val scheduleTime = System.currentTimeMillis()
             // 寻路请求
@@ -90,12 +99,18 @@ object PathFinderHandler {
                 // 最大 32 格的寻路请求
                 val findPath = pathFinder.findPath(target, distance = 64f)
                 // 调试模式下将显示路径节点
-                if (AdyeshachSettings.debug) {
-                    findPath?.nodes?.forEach { it.display(target.world!!) }
+                if (AdyeshachSettings.debug && !Folia.isFolia) {
+                    val display = Runnable { findPath?.nodes?.forEach { it.display(target.world!!) } }
+                    display.run()
                 }
-                // PathSmoothing 返回方块底面中心坐标 (x+0.5, y, z+0.5)
+                // TabooLib PathSmoothing 会在一个 region 中横向读取多个路径点；
+                // Folia 下跨 region 路径不能这样访问世界，保留原始路径节点。
                 val pointList = if (findPath != null) {
-                    PathSmoothing.smooth(findPath, nodeEntity).toMutableList()
+                    if (Folia.isFolia) {
+                        findPath.nodes.map { Vector(it.x + 0.5, it.y.toDouble(), it.z + 0.5) }.toMutableList()
+                    } else {
+                        PathSmoothing.smooth(findPath, nodeEntity).toMutableList()
+                    }
                 } else {
                     ArrayList()
                 }
@@ -111,7 +126,7 @@ object PathFinderHandler {
                     }
                 }
                 // 调用回调函数
-                call.accept(ResultNavigation(pointList, startTime, scheduleTime))
+                dispatchResult(start, call, ResultNavigation(pointList, startTime, scheduleTime))
             } else {
                 var vec: Vector? = null
                 // 重复最多 10 次的游荡请求
@@ -121,9 +136,17 @@ object PathFinderHandler {
                     }
                 }
                 if (vec != null) {
-                    call.accept(ResultRandomPosition(vec!!, startTime, scheduleTime))
+                    dispatchResult(start, call, ResultRandomPosition(vec!!, startTime, scheduleTime))
                 }
             }
+        }
+    }
+
+    private fun dispatchResult(start: Location, call: Consumer<Result>, result: Result) {
+        if (Folia.isFolia) {
+            start.clone().runTask(Runnable { call.accept(result) })
+        } else {
+            call.accept(result)
         }
     }
 }

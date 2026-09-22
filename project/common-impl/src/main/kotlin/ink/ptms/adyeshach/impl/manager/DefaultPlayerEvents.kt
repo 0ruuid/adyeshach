@@ -14,8 +14,10 @@ import taboolib.common.platform.Awake
 import taboolib.common.platform.event.EventPriority
 import taboolib.common.platform.event.SubscribeEvent
 import taboolib.common.platform.function.submit
+import taboolib.platform.Folia
 import taboolib.platform.util.bukkitPlugin
 import taboolib.platform.util.onlinePlayers
+import taboolib.platform.util.submit as submitForEntity
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
@@ -31,6 +33,9 @@ internal object DefaultPlayerEvents {
 
     @Awake(LifeCycle.ACTIVE)
     fun onActive() {
+        if (Folia.isFolia) {
+            return
+        }
         // PacketEvents 监听器由 PacketLoader 在 ENABLE 时注册
         // 释放玩家的数据包缓冲区
         val packetHandler = Adyeshach.api().getMinecraftAPI().getPacketHandler()
@@ -48,8 +53,14 @@ internal object DefaultPlayerEvents {
     fun onJoin(e: PlayerJoinEvent) {
         if (AdyeshachSettings.spawnTrigger == SpawnTrigger.JOIN) {
             // 延迟初始化
-            submit(delay = AdyeshachSettings.spawnDelay.toLong()) {
-                Adyeshach.api().setupEntityManager(e.player)
+            if (Folia.isFolia) {
+                e.player.submitForEntity(delay = AdyeshachSettings.spawnDelay.toLong()) {
+                    Adyeshach.api().setupEntityManager(e.player)
+                }
+            } else {
+                submit(delay = AdyeshachSettings.spawnDelay.toLong()) {
+                    Adyeshach.api().setupEntityManager(e.player)
+                }
             }
         }
     }
@@ -60,7 +71,11 @@ internal object DefaultPlayerEvents {
     @SubscribeEvent
     fun onLateJoin(e: AdyeshachPlayerJoinEvent) {
         if (AdyeshachSettings.spawnTrigger == SpawnTrigger.KEEP_ALIVE) {
-            Adyeshach.api().setupEntityManager(e.player)
+            if (Folia.isFolia) {
+                e.player.submitForEntity { Adyeshach.api().setupEntityManager(e.player) }
+            } else {
+                Adyeshach.api().setupEntityManager(e.player)
+            }
         }
     }
 
@@ -80,7 +95,11 @@ internal object DefaultPlayerEvents {
     @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onTeleport(e: PlayerTeleportEvent) {
         if (e.from.world == e.to.world && e.from.distance(e.to) > AdyeshachSettings.visibleDistance) {
-            submit(delay = 20) { Adyeshach.api().refreshEntityManager(e.player) }
+            if (Folia.isFolia) {
+                e.player.submitForEntity(delay = 20) { Adyeshach.api().refreshEntityManager(e.player) }
+            } else {
+                submit(delay = 20) { Adyeshach.api().refreshEntityManager(e.player) }
+            }
         }
     }
 
@@ -89,7 +108,11 @@ internal object DefaultPlayerEvents {
      */
     @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onTeleport(e: PlayerChangedWorldEvent) {
-        submit(delay = 20) { Adyeshach.api().refreshEntityManager(e.player) }
+        if (Folia.isFolia) {
+            e.player.submitForEntity(delay = 20) { Adyeshach.api().refreshEntityManager(e.player) }
+        } else {
+            submit(delay = 20) { Adyeshach.api().refreshEntityManager(e.player) }
+        }
     }
 
 }

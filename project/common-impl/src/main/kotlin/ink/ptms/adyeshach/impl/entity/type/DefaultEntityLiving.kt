@@ -7,12 +7,12 @@ import ink.ptms.adyeshach.core.entity.type.AdyEntityLiving
 import ink.ptms.adyeshach.core.util.toItem
 import ink.ptms.adyeshach.impl.entity.DefaultEquipable
 import ink.ptms.adyeshach.impl.util.ifTrue
+import ink.ptms.adyeshach.impl.util.runOnRegion
 import ink.ptms.adyeshach.impl.util.toRGB
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
-import taboolib.common.platform.function.submit
 import taboolib.common5.cbool
 import java.util.concurrent.ConcurrentHashMap
 
@@ -46,11 +46,11 @@ abstract class DefaultEntityLiving(entityType: EntityTypes) : DefaultEntity(enti
                 Adyeshach.api().getMinecraftAPI().getEntitySpawner().spawnEntityLiving(viewer, entityType, index, normalizeUniqueId, clientPosition.toLocation())
                 // 更新装备
                 if (isEquipmentRefreshOnSpawn) {
-                    submit(delay = 1) { updateEquipment() }
+                    runOnRegion(delay = 1) { updateEquipment() }
                 }
                 // 更新死亡状态
                 if (isDie) {
-                    submit(delay = 5) { die(viewer = viewer) }
+                    runOnRegion(delay = 5) { die(viewer = viewer) }
                 }
             }
         } else {
@@ -69,7 +69,7 @@ abstract class DefaultEntityLiving(entityType: EntityTypes) : DefaultEntity(enti
         isDie = die
         if (isDie) {
             setHealth(-1f)
-            submit(delay = 15) {
+            runOnRegion(delay = 15) {
                 if (isDie) {
                     setHealth(1f)
                 }
@@ -86,7 +86,7 @@ abstract class DefaultEntityLiving(entityType: EntityTypes) : DefaultEntity(enti
             val operator = Adyeshach.api().getMinecraftAPI().getEntityOperator()
             val metadataHandler = Adyeshach.api().getMinecraftAPI().getEntityMetadataHandler()
             operator.updateEntityMetadata(viewer, index, listOf(metadataHandler.createFloatMeta(healthMeta.index, -1f)))
-            submit(delay = 15) {
+            runOnRegion(delay = 15) {
                 operator.updateEntityMetadata(viewer, index, listOf(metadataHandler.createFloatMeta(healthMeta.index, -1f)))
             }
         } else {
