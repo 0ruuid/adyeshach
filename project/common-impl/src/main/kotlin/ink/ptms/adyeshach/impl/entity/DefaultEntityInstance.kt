@@ -277,6 +277,7 @@ abstract class DefaultEntityInstance(entityType: EntityTypes = EntityTypes.ZOMBI
 
     override fun onTick() {
         if (allowSyncPosition()) {
+            visibilityHandler.syncVehiclePositionOnTick()
             movementHandler.handleMove()
             brain?.tick()
             bionicSight?.tick()

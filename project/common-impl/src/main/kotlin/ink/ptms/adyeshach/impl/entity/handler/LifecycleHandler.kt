@@ -11,6 +11,7 @@ import ink.ptms.adyeshach.impl.entity.DefaultEntityInstance
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Player
+import taboolib.platform.Folia
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -101,12 +102,14 @@ open class LifecycleHandler(protected val self: DefaultEntityInstance) {
     open fun spawn(location: Location) {
         self.position = EntityPosition.fromLocation(location)
         self.clientPosition = self.position
-        val viewers = getSpawnViewers()
-        // 伴生实体需要使用内部方法（visible 接口会拒绝伴生实体的操作）
-        if (self.isCompanion()) {
-            viewers.forEach { self.handleCompanionVisible(it, true) }
-        } else {
-            viewers.forEach { self.visible(it, true) }
+        if (!Folia.isFolia) {
+            val viewers = getSpawnViewers()
+            // 伴生实体需要使用内部方法（visible 接口会拒绝伴生实体的操作）
+            if (self.isCompanion()) {
+                viewers.forEach { self.handleCompanionVisible(it, true) }
+            } else {
+                viewers.forEach { self.visible(it, true) }
+            }
         }
         AdyeshachEntitySpawnEvent(self).call()
     }

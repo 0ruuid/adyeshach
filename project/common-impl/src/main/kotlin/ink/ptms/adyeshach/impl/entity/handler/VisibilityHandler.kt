@@ -39,6 +39,11 @@ open class VisibilityHandler(protected val self: DefaultEntityInstance) {
         }
     }
 
+    /** Synchronizes vehicle-backed NPC state from the NPC region tick. */
+    open fun syncVehiclePositionOnTick() {
+        syncVehiclePosition()
+    }
+
     /**
      * 同步到载具位置
      */

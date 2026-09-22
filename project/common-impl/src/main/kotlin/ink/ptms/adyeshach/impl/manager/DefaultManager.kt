@@ -31,7 +31,7 @@ open class DefaultManager : BaseManager() {
     private val foliaTickPending: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     override fun getPlayers(): List<Player> {
-        return onlinePlayers
+        return if (Folia.isFolia) DefaultManagerHandler.playersInGameTick.toList() else onlinePlayers
     }
 
     override fun add(entity: EntityInstance) {
