@@ -9,13 +9,13 @@ import ink.ptms.adyeshach.core.event.AdyeshachEntityDamageEvent
 import ink.ptms.adyeshach.core.event.AdyeshachEntityInteractEvent
 import ink.ptms.adyeshach.core.util.safeDistance
 import ink.ptms.adyeshach.impl.util.RayTrace
+import ink.ptms.adyeshach.impl.util.runOnRegion
 import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.util.Vector
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
 import taboolib.common.platform.event.SubscribeEvent
-import taboolib.common.platform.function.submit
 import taboolib.module.navigation.BoundingBox
 import taboolib.platform.util.isMainhand
 
@@ -28,7 +28,8 @@ internal object ModelEngineEvents {
             Adyeshach.api().getEventBus().prepareMetaUpdate { e ->
                 val entity = e.entity as? ModelEngine ?: return@prepareMetaUpdate true
                 if (e.key == "customName" || e.key == "isCustomNameVisible") {
-                    submit(delay = 1) { entity.updateModelEngineNameTag() }
+                    (entity as? EntityInstance)?.runOnRegion(delay = 1) { entity.updateModelEngineNameTag() }
+                        ?: entity.updateModelEngineNameTag()
                 }
                 true
             }

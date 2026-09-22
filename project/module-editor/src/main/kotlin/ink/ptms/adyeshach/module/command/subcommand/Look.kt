@@ -5,11 +5,11 @@ package ink.ptms.adyeshach.module.command.subcommand
 import ink.ptms.adyeshach.core.entity.StandardTags
 import ink.ptms.adyeshach.core.util.sendLang
 import ink.ptms.adyeshach.impl.entity.controller.BionicSight
+import ink.ptms.adyeshach.impl.util.runOnRegion
 import ink.ptms.adyeshach.module.command.*
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import taboolib.common.platform.command.*
-import taboolib.common.platform.function.submit
 import taboolib.platform.util.toBukkitLocation
 import taboolib.platform.util.toProxyLocation
 
@@ -32,7 +32,9 @@ val lookSubCommand = subCommand {
                         sender.sendLang("command-world-different", ctx["id"])
                         return@multiControl
                     }
-                    it.setHeadRotation(sender.eyeLocation)
+                    val entity = it
+                    val target = sender.eyeLocation.clone()
+                    entity.runOnRegion { entity.setHeadRotation(target) }
                     if (!sender.isIgnoreNotice()) {
                         sender.sendLang("command-look-to-here", it.id)
                     }
@@ -47,7 +49,10 @@ val lookSubCommand = subCommand {
                         sender.sendLang("command-world-different", ctx["id"])
                         return@multiControl
                     }
-                    it.setHeadRotation(sender.location.yaw, sender.location.pitch)
+                    val entity = it
+                    val yaw = sender.location.yaw
+                    val pitch = sender.location.pitch
+                    entity.runOnRegion { entity.setHeadRotation(yaw, pitch) }
                     if (!sender.isIgnoreNotice()) {
                         sender.sendLang("command-look-with", it.id, format(sender.location.yaw), format(sender.location.pitch))
                     }
@@ -61,7 +66,8 @@ val lookSubCommand = subCommand {
                     val origin = it.getLocation().toProxyLocation()
                     val y = ctx.yaw("yaw", origin)
                     val p = ctx.pitch("pitch", origin)
-                    it.setHeadRotation(y, p)
+                    val entity = it
+                    entity.runOnRegion { entity.setHeadRotation(y, p) }
                     if (!sender.isIgnoreNotice()) {
                         sender.sendLang("command-look-with", it.id, format(y), format(p))
                     }
@@ -73,7 +79,9 @@ val lookSubCommand = subCommand {
             execute<CommandSender> { sender, ctx, _ ->
                 multiControl<EntitySource.Empty>(sender, ctx["id"], STANDARD_LOOK_TRACKER, unified = false) {
                     val loc = ctx.locationWithoutWorld(origin = it.getLocation().toProxyLocation())
-                    it.setHeadRotation(loc.toBukkitLocation())
+                    val entity = it
+                    val target = loc.toBukkitLocation()
+                    entity.runOnRegion { entity.setHeadRotation(target) }
                     if (!sender.isIgnoreNotice()) {
                         sender.sendLang("command-look-to-location", it.id, format(loc.x), format(loc.y), format(loc.z))
                     }

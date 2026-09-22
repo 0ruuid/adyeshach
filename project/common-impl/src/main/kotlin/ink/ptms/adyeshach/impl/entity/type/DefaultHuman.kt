@@ -13,6 +13,7 @@ import ink.ptms.adyeshach.core.event.AdyeshachGameProfileGenerateEvent
 import ink.ptms.adyeshach.core.event.AdyeshachPlayerUUIDGenerateEvent
 import ink.ptms.adyeshach.core.util.getEnum
 import ink.ptms.adyeshach.impl.network.NetworkMineskin
+import ink.ptms.adyeshach.impl.manager.DefaultManagerHandler
 import ink.ptms.adyeshach.impl.util.ifTrue
 import ink.ptms.adyeshach.impl.util.runOnEntity
 import org.bukkit.entity.Player
@@ -294,7 +295,8 @@ abstract class DefaultHuman(entityTypes: EntityTypes) : DefaultEntityLiving(enti
         internal fun playerTextureRefresh200() {
             val finder = Adyeshach.api().getEntityFinder()
             var i = 0L
-            onlinePlayers.forEach { viewer ->
+            val viewers = if (Folia.isFolia) DefaultManagerHandler.playersInGameTick else onlinePlayers
+            viewers.forEach { viewer ->
                 if (Folia.isFolia) {
                     viewer.runOnEntity {
                         finder.getVisibleEntities(viewer).filterIsInstance<AdyHuman>().forEach { human ->

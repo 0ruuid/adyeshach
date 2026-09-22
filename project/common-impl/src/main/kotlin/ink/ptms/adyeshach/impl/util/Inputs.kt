@@ -5,7 +5,6 @@ import org.bukkit.entity.Player
 import org.bukkit.event.player.PlayerEditBookEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import taboolib.common.platform.event.SubscribeEvent
-import taboolib.common.platform.function.submit
 import taboolib.module.chat.Components
 import taboolib.library.xseries.XMaterial
 import taboolib.platform.util.buildBook
@@ -48,7 +47,7 @@ object Inputs {
                 trimmed.split("\n")
             }
             listen.accept(lines)
-            submit(delay = 1) {
+            e.player.runOnEntity(delay = 1) {
                 e.player.inventory.takeItem(99) { it.itemMeta == e.newBookMeta }
             }
         }

@@ -4,13 +4,13 @@ import ink.ptms.adyeshach.core.Adyeshach
 import ink.ptms.adyeshach.core.AdyeshachHologram
 import ink.ptms.adyeshach.core.AdyeshachHologramHandler
 import ink.ptms.adyeshach.core.entity.manager.ManagerType
+import ink.ptms.adyeshach.impl.util.runOnRegion
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
 import taboolib.common.platform.PlatformFactory
-import taboolib.common.platform.function.submit
 import taboolib.common5.util.printed
 
 /**
@@ -63,12 +63,12 @@ class DefaultAdyeshachHologramHandler : AdyeshachHologramHandler {
         for (i in 0 until len) {
             val frame = content.map { if (i < it.size) it[i] else it.lastOrNull() ?: "" }
             // 分段更新内容
-            submit(delay = i.toLong()) {
+            location.runOnRegion(delay = i.toLong()) {
                 hologramItems.forEachIndexed { index, entity -> entity.text = frame[index] }
             }
         }
         // 延迟后移除
-        submit(delay = stay) { hologram.remove() }
+        location.runOnRegion(delay = stay) { hologram.remove() }
     }
 
     companion object {

@@ -5,10 +5,10 @@ import ink.ptms.adyeshach.core.entity.EntityFireball
 import ink.ptms.adyeshach.core.entity.EntityThrowable
 import ink.ptms.adyeshach.core.entity.type.AdyMinecart
 import ink.ptms.adyeshach.core.event.AdyeshachEntityCreateEvent
+import ink.ptms.adyeshach.impl.util.runOnEntity
 import org.bukkit.event.player.PlayerRespawnEvent
 import taboolib.common.platform.event.EventPriority
 import taboolib.common.platform.event.SubscribeEvent
-import taboolib.common.platform.function.submit
 
 /**
  * Adyeshach
@@ -24,7 +24,7 @@ internal object DefaultEntityFixer {
      */
     @SubscribeEvent
     fun onRespawn(e: PlayerRespawnEvent) {
-        submit(delay = 20) {
+        e.player.runOnEntity(delay = 20) {
             Adyeshach.api().getEntityFinder().getVisibleEntities(e.player).forEach { it.visible(e.player, true) }
         }
     }

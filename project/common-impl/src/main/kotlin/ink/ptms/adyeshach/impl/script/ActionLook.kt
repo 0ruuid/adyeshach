@@ -8,6 +8,7 @@ import ink.ptms.adyeshach.impl.getEntities
 import ink.ptms.adyeshach.impl.getManager
 import ink.ptms.adyeshach.impl.isEntitySelected
 import ink.ptms.adyeshach.impl.throwUndefinedError
+import ink.ptms.adyeshach.impl.util.runOnRegion
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import taboolib.common.util.isPlayer
@@ -41,11 +42,14 @@ private fun actionLook() = combinationParser {
                     submitRepeat(5) {
                         entities.forEach { e ->
                             val lookAt = resolveLookAt(e)
-                            e.controllerLookAt(lookAt.x, lookAt.y, lookAt.z, 35f, 40f)
+                            e.runOnRegion { e.controllerLookAt(lookAt.x, lookAt.y, lookAt.z, 35f, 40f) }
                         }
                     }
                 } else {
-                    entities.forEach { e -> e.setHeadRotation(resolveLookAt(e)) }
+                    entities.forEach { e ->
+                        val lookAt = resolveLookAt(e)
+                        e.runOnRegion { e.setHeadRotation(lookAt) }
+                    }
                 }
             }
         }

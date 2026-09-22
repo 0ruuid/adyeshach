@@ -9,6 +9,9 @@ import ink.ptms.adyeshach.core.event.AdyeshachEntityInteractEvent
 import ink.ptms.adyeshach.core.event.AdyeshachEntityRemoveEvent
 import ink.ptms.adyeshach.core.event.AdyeshachEntityVisibleEvent
 import ink.ptms.adyeshach.impl.entity.trait.Trait
+import ink.ptms.adyeshach.impl.manager.DefaultManagerHandler
+import ink.ptms.adyeshach.impl.util.runOnEntity
+import ink.ptms.adyeshach.impl.util.runOnRegion
 import ink.ptms.adyeshach.impl.util.Inputs.inputBook
 import org.bukkit.entity.Player
 import taboolib.common.platform.Schedule
@@ -21,6 +24,7 @@ import taboolib.common5.clong
 import taboolib.module.kether.KetherShell
 import taboolib.module.kether.bool
 import taboolib.module.kether.runKether
+import taboolib.platform.Folia
 import java.util.concurrent.CompletableFuture
 
 object TraitViewCondition : Trait() {
@@ -30,7 +34,13 @@ object TraitViewCondition : Trait() {
 
     @Schedule(period = 20, async = true)
     fun update() {
-        Adyeshach.api().getPublicEntityManager(ManagerType.PERSISTENT).getEntities { !it.isDerived() }.forEach { it.updateTraitViewCondition() }
+        Adyeshach.api().getPublicEntityManager(ManagerType.PERSISTENT).getEntities { !it.isDerived() }.forEach { entity ->
+            if (Folia.isFolia) {
+                entity.runOnRegion { entity.updateTraitViewCondition() }
+            } else {
+                entity.updateTraitViewCondition()
+            }
+        }
     }
 
     @SubscribeEvent
@@ -142,27 +152,42 @@ fun EntityInstance.updateTraitViewCondition() {
         val script = TraitViewCondition.data.getStringList(uniqueId)
         // 设置冷却
         setTag(TraitViewCondition.CHECK_TAG, System.currentTimeMillis() + (AdyeshachSettings.viewConditionInterval * 50))
-        // 获取玩家
-        viewPlayers.getPlayersInViewDistance().forEach { player ->
-            runKether {
-                TraitViewCondition.runViewConditionScript(
-                    script,
-                    this@updateTraitViewCondition,
-                    player,
-                    listOf(this@updateTraitViewCondition)
-                ).bool { cond ->
-                    if (cond) {
-                        // 看不见但是满足可视条件
-                        if (player.name !in viewPlayers.visible && Adyeshach.api().getMinecraftAPI().getHelper().isChunkVisible(player, chunkX, chunkZ)) {
-                            visible(player, true)
+        // Folia 下由玩家 EntityScheduler 读取玩家位置并应用可见性变化。
+        val players = if (Folia.isFolia) {
+            DefaultManagerHandler.playersInGameTick.filter { it.name in viewPlayers.viewers }
+        } else {
+            viewPlayers.getPlayersInViewDistance()
+        }
+        players.forEach { player ->
+            val evaluate = {
+                runKether {
+                    TraitViewCondition.runViewConditionScript(
+                        script,
+                        this@updateTraitViewCondition,
+                        player,
+                        listOf(this@updateTraitViewCondition)
+                    ).bool { cond ->
+                        val apply = {
+                            if (cond) {
+                                if (player.name !in viewPlayers.visible && Adyeshach.api().getMinecraftAPI().getHelper().isChunkVisible(player, chunkX, chunkZ)) {
+                                    visible(player, true)
+                                }
+                            } else if (player.name in viewPlayers.visible) {
+                                visible(player, false)
+                            }
                         }
-                    } else {
-                        // 看得见但不满足可视条件
-                        if (player.name in viewPlayers.visible) {
-                            visible(player, false)
-                        }
+                        if (Folia.isFolia) player.runOnEntity(apply) else apply()
                     }
                 }
+            }
+            if (Folia.isFolia) {
+                player.runOnEntity {
+                    if (isInVisibleDistance(player)) {
+                        evaluate()
+                    }
+                }
+            } else {
+                evaluate()
             }
         }
     } else {

@@ -7,6 +7,9 @@ import ink.ptms.adyeshach.core.entity.manager.ManagerType
 import ink.ptms.adyeshach.core.event.AdyeshachEntityRemoveEvent
 import ink.ptms.adyeshach.core.event.AdyeshachEntityVisibleEvent
 import ink.ptms.adyeshach.impl.entity.trait.Trait
+import ink.ptms.adyeshach.impl.manager.DefaultManagerHandler
+import ink.ptms.adyeshach.impl.util.runOnEntity
+import ink.ptms.adyeshach.impl.util.runOnRegion
 import ink.ptms.adyeshach.impl.util.Inputs.inputBook
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -20,6 +23,7 @@ import taboolib.common.platform.function.adaptCommandSender
 import taboolib.module.configuration.util.getStringListColored
 import taboolib.module.kether.KetherFunction
 import taboolib.module.kether.runKether
+import taboolib.platform.Folia
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -51,7 +55,13 @@ object TraitTitle : Trait() {
 
     @Schedule(period = 100, async = true)
     fun update() {
-        Adyeshach.api().getPublicEntityManager(ManagerType.PERSISTENT).getEntities { !it.isDerived() }.forEach { update(it) }
+        Adyeshach.api().getPublicEntityManager(ManagerType.PERSISTENT).getEntities { !it.isDerived() }.forEach { entity ->
+            if (Folia.isFolia) {
+                entity.runOnRegion { update(entity) }
+            } else {
+                update(entity)
+            }
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -86,7 +96,13 @@ object TraitTitle : Trait() {
      * 创建全息
      */
     fun create(entity: EntityInstance) {
-        Bukkit.getOnlinePlayers().forEach { create(it, entity) }
+        viewers().forEach { viewer ->
+            if (Folia.isFolia) {
+                viewer.runOnEntity { create(viewer, entity) }
+            } else {
+                create(viewer, entity)
+            }
+        }
     }
 
     /**
@@ -119,7 +135,13 @@ object TraitTitle : Trait() {
      * 更新全息内容
      */
     fun update(entity: EntityInstance) {
-        Bukkit.getOnlinePlayers().forEach { update(it, entity) }
+        viewers().forEach { viewer ->
+            if (Folia.isFolia) {
+                viewer.runOnEntity { update(viewer, entity) }
+            } else {
+                update(viewer, entity)
+            }
+        }
     }
 
     /**
@@ -151,7 +173,17 @@ object TraitTitle : Trait() {
      * 移除全息缓存
      */
     fun remove(entity: EntityInstance) {
-        Bukkit.getOnlinePlayers().forEach { remove(it, entity) }
+        viewers().forEach { viewer ->
+            if (Folia.isFolia) {
+                viewer.runOnEntity { remove(viewer, entity) }
+            } else {
+                remove(viewer, entity)
+            }
+        }
+    }
+
+    private fun viewers(): Collection<Player> {
+        return if (Folia.isFolia) DefaultManagerHandler.playersInGameTick else Bukkit.getOnlinePlayers()
     }
 
     /**

@@ -9,6 +9,9 @@ import ink.ptms.adyeshach.core.entity.path.ResultNavigation
 import ink.ptms.adyeshach.core.event.AdyeshachEntityRemoveEvent
 import ink.ptms.adyeshach.core.util.plus
 import ink.ptms.adyeshach.impl.entity.trait.Trait
+import ink.ptms.adyeshach.impl.manager.DefaultManagerHandler
+import ink.ptms.adyeshach.impl.util.runOnEntity
+import ink.ptms.adyeshach.impl.util.runOnRegion
 import ink.ptms.adyeshach.impl.util.ChunkAccess
 import org.bukkit.*
 import org.bukkit.entity.Player
@@ -21,11 +24,11 @@ import org.bukkit.inventory.EquipmentSlot
 import taboolib.common.platform.Schedule
 import taboolib.common.platform.event.SubscribeEvent
 import taboolib.common.platform.function.adaptPlayer
-import taboolib.common.platform.function.submit
 import taboolib.common.platform.function.warning
 import taboolib.common5.clong
 import taboolib.library.xseries.XMaterial
 import taboolib.module.configuration.util.mapListAs
+import taboolib.platform.Folia
 import taboolib.platform.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -46,40 +49,44 @@ object TraitPatrol : Trait() {
      */
     @Schedule(period = 2, async = true)
     fun process() {
-        data.getKeys(false).forEach {
-            val entity = Adyeshach.api().getEntityFinder().getEntityFromUniqueId(it)
-            // 触发巡逻的前提 —— 不在编辑模式、不在移动、存在观察者
-            if (entity != null && !entity.isEditing() && !entity.hasTag(StandardTags.IS_MOVING, StandardTags.IS_MOVING_START) && entity.hasViewer()) {
-                // 获取所有节点
-                val nodes = entity.getTraitPatrolNodes()
-                if (nodes.isEmpty()) {
-                    return@forEach
-                }
-                // 设置等待
-                if (entity.getTag(PATROL_NEXT_MOVE) == null) {
-                    entity.setTag(PATROL_NEXT_MOVE, System.currentTimeMillis() + entity.getTraitPatrolWaitTime())
-                    return@forEach
-                }
-                // 等待移动
-                if (entity.getTag(PATROL_NEXT_MOVE).clong > System.currentTimeMillis()) {
-                    return@forEach
-                }
-                // 获取节点序号
-                val index = entity.getNodeIndex()
-                if (index < nodes.size) {
-                    try {
-                        entity.moveFrames = nodes[index].reset()
-                        entity.setNodeIndex(index + 1)
-                    } catch (e: Exception) {
-                        warning("Patrol Error: $e")
-                    }
-                } else {
-                    entity.setNodeIndex(0)
-                }
-                // 移除等待时间
-                entity.removeTag(PATROL_NEXT_MOVE)
+        data.getKeys(false).forEach { id ->
+            val entity = Adyeshach.api().getEntityFinder().getEntityFromUniqueId(id) ?: return@forEach
+            if (Folia.isFolia) {
+                entity.runOnRegion { process(entity) }
+            } else {
+                process(entity)
             }
         }
+    }
+
+    private fun process(entity: EntityInstance) {
+        // 触发巡逻的前提 —— 不在编辑模式、不在移动、存在观察者
+        if (entity.isEditing() || entity.hasTag(StandardTags.IS_MOVING, StandardTags.IS_MOVING_START) || !entity.hasViewer()) {
+            return
+        }
+        val nodes = entity.getTraitPatrolNodes()
+        if (nodes.isEmpty()) {
+            return
+        }
+        if (entity.getTag(PATROL_NEXT_MOVE) == null) {
+            entity.setTag(PATROL_NEXT_MOVE, System.currentTimeMillis() + entity.getTraitPatrolWaitTime())
+            return
+        }
+        if (entity.getTag(PATROL_NEXT_MOVE).clong > System.currentTimeMillis()) {
+            return
+        }
+        val index = entity.getNodeIndex()
+        if (index < nodes.size) {
+            try {
+                entity.moveFrames = nodes[index].reset()
+                entity.setNodeIndex(index + 1)
+            } catch (e: Exception) {
+                warning("Patrol Error: $e")
+            }
+        } else {
+            entity.setNodeIndex(0)
+        }
+        entity.removeTag(PATROL_NEXT_MOVE)
     }
 
     /**
@@ -87,30 +94,25 @@ object TraitPatrol : Trait() {
      */
     @Schedule(period = 20, async = true)
     fun edit() {
-        Bukkit.getOnlinePlayers().forEach { player ->
-            if (editCacheMap.containsKey(player.name)) {
-                val entity = editCacheMap[player.name]!!
-                val nodes = entity.getTraitPatrolNodes()
-                nodes.forEachIndexed { i, node ->
-                    // 播放轨迹
-//                    node.reset()
-//                    while (node.index < node.length) {
-//                        val next = node.next()
-//                        if (next != null) {
-//                            player.spawnParticle(Particle.FLAME, next.clone().plus(y = if (i % 2 == 0) 0.0 else 0.2), 5, 0.0, 0.0, 0.0, 0.0)
-//                        }
-//                    }
-                    val pos = node.target.clone()
-                    // 节点粒子
-                    player.spawnParticle(Particle.END_ROD, pos.clone().plus(0.5, 0.5, 0.5), 10, 0.0, 1.0, 0.0, 0.0)
-                    // 节点全息
-                    val hologram = Adyeshach.api().getHologramHandler().createHologram(player, pos.clone().plus(0.5, 1.0, 0.5), listOf("#${i + 1}"))
-                    // 延迟删除
-                    submit(delay = 20) { hologram.remove() }
-                }
-                language.sendLang(player, "trait-patrol", entity.getTraitPatrolNodeCount())
+        val players = if (Folia.isFolia) DefaultManagerHandler.playersInGameTick else Bukkit.getOnlinePlayers()
+        players.forEach { player ->
+            if (Folia.isFolia) {
+                player.runOnEntity { edit(player) }
+            } else {
+                edit(player)
             }
         }
+    }
+
+    private fun edit(player: Player) {
+        val entity = editCacheMap[player.name] ?: return
+        entity.getTraitPatrolNodes().forEachIndexed { index, node ->
+            val pos = node.target.clone()
+            player.spawnParticle(Particle.END_ROD, pos.clone().plus(0.5, 0.5, 0.5), 10, 0.0, 1.0, 0.0, 0.0)
+            val hologram = Adyeshach.api().getHologramHandler().createHologram(player, pos.clone().plus(0.5, 1.0, 0.5), listOf("#${index + 1}"))
+            player.runOnEntity(delay = 20) { hologram.remove() }
+        }
+        language.sendLang(player, "trait-patrol", entity.getTraitPatrolNodeCount())
     }
 
     @SubscribeEvent
