@@ -4,6 +4,8 @@ import ink.ptms.adyeshach.core.entity.EntityInstance
 import ink.ptms.adyeshach.core.event.AdyeshachEntityDamageEvent
 import ink.ptms.adyeshach.core.event.AdyeshachEntityInteractEvent
 import ink.ptms.adyeshach.core.event.AdyeshachEntityRemoveEvent
+import ink.ptms.adyeshach.core.util.FoliaRuntime
+import ink.ptms.adyeshach.core.util.runOnEntity
 import ink.ptms.adyeshach.impl.entity.trait.Trait
 import ink.ptms.adyeshach.impl.util.Inputs.inputBook
 import org.bukkit.entity.Player
@@ -45,15 +47,16 @@ object TraitCommand : Trait() {
         fun String.format(): String {
             return trim().replace("@player", player.name).replacePlaceholder(player)
         }
-        // 获取命令列表
-        data.getStringList(entity.uniqueId).forEach {
-            var line = it
+        // 每条命令完成派发后再处理下一条；切换到全局区域时不能阻塞玩家线程。
+        val commands = data.getStringList(entity.uniqueId)
+        fun runNext(index: Int) {
+            if (index >= commands.size) return
+            var line = commands[index]
             for (t in Type.values()) {
-                // 匹配类型
                 if (line.endsWith("~${t.name.lowercase()}")) {
-                    // 类型不符
                     if (t != type) {
-                        return@forEach
+                        runNext(index + 1)
+                        return
                     }
                     line = line.substringBeforeLast("~${t.name.lowercase()}")
                     break
@@ -62,22 +65,24 @@ object TraitCommand : Trait() {
             when {
                 // 管理员权限执行
                 line.startsWith("op:") -> {
-                    val isOp = player.isOp
-                    player.isOp = true
+                    val wasOp = player.isOp
                     try {
+                        player.isOp = true
                         adaptPlayer(player).performCommand(line.substringAfter("op:").format())
                     } catch (ex: Throwable) {
                         ex.printStackTrace()
+                    } finally {
+                        player.isOp = wasOp
                     }
-                    player.isOp = isOp
                 }
-                // 服务器控制台执行
-                line.startsWith("server:") -> {
-                    console().performCommand(line.substringAfter("server:").format())
-                }
-                // 服务器控制台执行
-                line.startsWith("console:") -> {
-                    console().performCommand(line.substringAfter("console:").format())
+                // 服务器控制台执行：占位符必须先在玩家所属线程解析。
+                line.startsWith("server:") || line.startsWith("console:") -> {
+                    val command = line.substringAfter(':').format()
+                    FoliaRuntime.runGlobal {
+                        console().performCommand(command)
+                        player.runOnEntity { runNext(index + 1) }
+                    }
+                    return
                 }
                 // Kether 脚本执行
                 line.startsWith("kether:") -> {
@@ -93,7 +98,9 @@ object TraitCommand : Trait() {
                     adaptPlayer(player).performCommand(line.replace("@player", player.name).replacePlaceholder(player))
                 }
             }
+            runNext(index + 1)
         }
+        runNext(0)
     }
 
     override fun id(): String {

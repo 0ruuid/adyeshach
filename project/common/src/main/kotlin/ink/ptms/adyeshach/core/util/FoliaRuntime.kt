@@ -69,6 +69,15 @@ object FoliaRuntime {
         }
     }
 
+    /** Dispatches console commands on the Folia global region; Paper callers remain on the main thread. */
+    fun runGlobal(action: () -> Unit) {
+        if (isFolia) {
+            submitPlatform { action() }
+        } else {
+            action()
+        }
+    }
+
     /** Executes world work in the scheduler that owns the location on Folia. */
     fun runLocation(location: Location, action: () -> Unit) {
         if (isFolia) {
