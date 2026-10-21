@@ -59,15 +59,15 @@ object PEParsers {
         override fun createMeta(index: Int, value: String) = metadataHandler().createChatMeta(index, value)
     }
 
-    class OptChatParser : MinecraftMetadataParser<String?>() {
-        override fun parse(value: Any): String? {
+    class OptChatParser : MinecraftMetadataParser<String>() {
+        override fun parse(value: Any): String {
             val str = when (value) {
                 is ComponentText -> value.toLegacyText()
                 else -> value.toString()
             }
-            return if (str.isBlank()) null else str
+            return str.ifBlank { "" }
         }
-        override fun createMeta(index: Int, value: String?) = metadataHandler().createOptChatMeta(index, value)
+        override fun createMeta(index: Int, value: String) = metadataHandler().createOptChatMeta(index, value.takeUnless { it.isBlank() })
     }
 
     class ItemStackParser : MinecraftMetadataParser<ItemStack>() {

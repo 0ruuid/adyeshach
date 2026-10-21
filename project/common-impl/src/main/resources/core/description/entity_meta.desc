@@ -507,6 +507,7 @@ ink.ptms.adyeshach.core.entity.type.AdyRabbit
 ink.ptms.adyeshach.core.entity.type.AdySheep
     dyeColor b
         &sheep0
+        260100 18
         17 17
         15 -
         14 -
